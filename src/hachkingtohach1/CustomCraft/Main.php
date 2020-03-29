@@ -15,16 +15,7 @@ class Main extends PluginBase{
     }
 
     public function onEnable() : void{
-        $this->checkPluginNeed();
         $this->registerItemsCraft();
-    }
-
-    public function checkPluginNeed(){
-        $this->ce = $this->getServer()->getPluginManager()->getPlugin('PiggyCustomEnchants');
-        if($this->ce === null){
-            $this->getLogger()->warning('You need install plugin PiggyCustomEnchants to use this plugin!');
-            $this->getServer()->shutDown();
-        }
     }
 
     /**
