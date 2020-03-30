@@ -6,7 +6,7 @@ use pocketmine\item\Item;
 use pocketmine\plugin\PluginBase;
 use pocketmine\inventory\ShapedRecipe;
 use pocketmine\item\enchantment\{Enchantment, EnchantmentInstance};
-use DaPigGuy\PiggyCustomEnchants\{CustomEnchantManager, PiggyCustomEnchants, utils\Utils};
+use DaPigGuy\PiggyCustomEnchants\{CustomEnchantManager, enchants\CustomEnchant, PiggyCustomEnchants, utils\Utils};
 
 class Main extends PluginBase{
 
@@ -30,66 +30,89 @@ class Main extends PluginBase{
     /**
      * This is getCEnchantment string $name Item $item, int $level
      **/
-    public function getCEnchantment(string $name, $item, int $level){
-        $items = Item::fromString($item);
+    public function getCEnchantment(string $name, Item $item, int $level) : ?CustomEnchant{
         $enchant = CustomEnchantManager::getEnchantmentByName($name);
         if($enchant === null){
             $this->getLogger()->warning('CE is ' . $name . ' with level ' . $level . ' name is null!');
 
-            return;
+            return null;
         }
         if($level > $enchant->getMaxLevel()){
             $this->getLogger()->warning('CE is ' . $name . ' with level' . $level . ' max level is ' . $enchant->getMaxLevel());
 
-            return;
+            return null;
         }
-        if(!Utils::checkEnchantIncompatibilities($items, $enchant)){
+        if(!Utils::checkEnchantIncompatibilities($item, $enchant)){
             $this->getLogger()->warning('CE is ' . $name . ' with level ' . $level . 'This enchant is not compatible with another enchant.');
 
-            return;
+            return null;
         }
 
         return $enchant;
     }
 
-    public function getItem(array $item) : Item{
-        $items = Item::fromString($item[0]);
-        if(isset($item[1])){
-            $items->setCount((int) $item[1]);
-            foreach($this->getConfig()->getAll() as $craft){
-                if($craft["enable_enchant"] == "true"){
-                    foreach($craft["enchantment"] as $id => $level){
-                        $items->addEnchantment(new EnchantmentInstance($this->getEnchantment($id), $level));
-                    }
+    public function getItem(array $data) : Item{
+        if(!isset($data["item"])){
+            var_dump($data);
+            throw new \RuntimeException("Tried to parse config data with missing \"item\" key!");
+        }
+        $item = Item::fromString($data["item"]);
+        if(!$item instanceof Item){
+            throw new \RuntimeException("Found invalid item string \"" . $data["item"] . "\" when reading config.");
+        }
+        $item->setCount((int) $data["qty"]);
+
+        if(isset($data["enchantment"])){
+            foreach($data["enchantment"] as $id => $level){
+                $item->addEnchantment(new EnchantmentInstance($this->getEnchantment($id), $level));
+            }
+        }
+
+        if(isset($data["cenchantment"])){
+            foreach($data["cenchantment"] as $ceId => $ceLevel){
+                if(!class_exists(PiggyCustomEnchants::class)){
+                    throw new \RuntimeException("Found recipe that requires PiggyCustomEnchants but PiggyCustomEnchants is not loaded!");
                 }
-                if($craft["enable_cenchant"] == "true"){
-                    foreach($craft["cenchantment"] as $id => $level){
-                        $items->addEnchantment(new EnchantmentInstance($this->getCEnchantment($id, $craft["result"][0], $level), $level));
-                    }
+                $cei = $this->getCEnchantment($ceId, $item, $ceLevel);
+                if($cei instanceof CustomEnchant){
+                    $item->addEnchantment(new EnchantmentInstance($cei, $ceLevel));
                 }
             }
         }
 
-        return $items;
+        return $item;
     }
 
     // Lenght => array() & short => []
     public function registerItemsCraft(){
-        foreach($this->getConfig()->getAll() as $craft){
+        foreach($this->getConfig()->getAll() as $index => $craft){
+            $items = [];
+            if(!isset($craft["results"])){
+                throw new \RuntimeException("Found invalid recipe \"$index\".  Missing results index!");
+            }
+            foreach($craft["results"] as $result){
+                $item = $this->getItem($result);
+                if(isset($result["name"])){
+                    $item->setCustomName($result["name"]);
+                }
+                $items[] = $item;
+            }
+
+
             $recipes = new ShapedRecipe(
                 ["abc", "def", "ghi"],
                 [
-                    "a" => $this->getItem($craft["shape"][0][0]),
-                    "b" => $this->getItem($craft["shape"][0][1]),
-                    "c" => $this->getItem($craft["shape"][0][2]),
-                    "d" => $this->getItem($craft["shape"][1][0]),
-                    "e" => $this->getItem($craft["shape"][1][1]),
-                    "f" => $this->getItem($craft["shape"][1][2]),
-                    "g" => $this->getItem($craft["shape"][2][0]),
-                    "h" => $this->getItem($craft["shape"][2][1]),
-                    "i" => $this->getItem($craft["shape"][2][2]),
+                    "a" => Item::fromString($craft["shape"][0][0]),
+                    "b" => Item::fromString($craft["shape"][0][1]),
+                    "c" => Item::fromString($craft["shape"][0][2]),
+                    "d" => Item::fromString($craft["shape"][1][0]),
+                    "e" => Item::fromString($craft["shape"][1][1]),
+                    "f" => Item::fromString($craft["shape"][1][2]),
+                    "g" => Item::fromString($craft["shape"][2][0]),
+                    "h" => Item::fromString($craft["shape"][2][1]),
+                    "i" => Item::fromString($craft["shape"][2][2])
                 ],
-                [$this->getItem($craft["result"])]
+                $items
             );
             $this->getServer()->getCraftingManager()->registerRecipe($recipes);
         }

@@ -1,19 +1,20 @@
 ---
-#  Item_1 is name default, you can change name example like: nam, dragovn, ....
-Item_1:
-#----------------------------------------------------------
-# enable_enchant: false => not working
-# enable_cenchant: false => not working
-#----------------------------------------------------------     
+#Hopefully this is self explainatory. I'll write up the documentation later.
+Recipe_1:
     shape:
     - [[0], ["260:0"], [0]]
     - [["260:0"], ["260:0"], ["260:0"]]
-    - [[0], ["260:0"], [0]]    
-    result:  ["278:0", 1]
-    enable_enchant: true
-    enable_cenchant: true
-    enchantment: 
-        9: 1
-    cenchantment: 
-        haste: 1       
+    - [[0], ["260:0"], [0]]
+    results:
+      result1:
+        item: "278:0"
+        name: "PickAxe of Death!"
+        qty: 1
+        enchantment:
+          9: 1
+        cenchantment:
+          haste: 1
+      result2:
+        item: "6:0"
+        qty: 1
 ...
