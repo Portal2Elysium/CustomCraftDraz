@@ -2,9 +2,9 @@
 #Hopefully this is self explainatory. I'll write up the documentation later.
 Recipe_1:
     shape:
-    - [[0], ["260:0"], [0]]
-    - [["260:0"], ["260:0"], ["260:0"]]
-    - [[0], ["260:0"], [0]]
+    - ["0", "260:0", "0"]
+    - ["260:0", "260:0", "260:0"]
+    - ["0", "260:0", "0"]
     results:
       result1:
         item: "278:0"
